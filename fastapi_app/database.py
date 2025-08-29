@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, Column, String, DateTime, Integer, Text, Boolean, Float
+from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
@@ -8,81 +9,37 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def create_database_engine():
-    """创建数据库引擎，使用psycopg3"""
-    try:
-        # 使用 postgresql+psycopg 驱动 (psycopg3)
-        db_url = settings.database_url
-        if db_url.startswith("postgresql://"):
-            db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
-        
-        engine = create_engine(
-            db_url,
-            echo=False,
-            poolclass=QueuePool,
-            pool_size=20,
-            max_overflow=0,
-            pool_recycle=3600,
-            pool_pre_ping=True,
-            # psycopg3 特定参数
-            connect_args={
-                "server_settings": {
-                    "application_name": "spider_management_api",
-                    "client_encoding": "utf8"
-                }
-            }
-        )
-        
-        # 测试连接
-        with engine.connect() as connection:
-            result = connection.execute("SELECT 1")
-            result.fetchone()
-        
-        logger.info(f"✅ 数据库连接成功 (psycopg3): {settings.database_url}")
-        return engine
-        
-    except Exception as e:
-        logger.error(f"❌ psycopg3数据库连接失败: {e}")
-        
-        # 尝试使用psycopg2备选
+# 修补SQLAlchemy以支持openGauss
+def patch_opengauss():
+    """修补SQLAlchemy支持openGauss"""
+       
+    original_get_server_version_info = PGDialect_psycopg2._get_server_version_info
+    
+    def patched_get_server_version_info(self, connection):
         try:
-            db_url_psycopg2 = settings.database_url
-            if "postgresql+psycopg://" in db_url_psycopg2:
-                db_url_psycopg2 = db_url_psycopg2.replace("postgresql+psycopg://", "postgresql://", 1)
-            
-            engine = create_engine(
-                db_url_psycopg2,
-                echo=False,
-                poolclass=QueuePool,
-                pool_size=5,
-                max_overflow=10,
-                pool_recycle=3600,
-                pool_pre_ping=True,
-            )
-            
-            # 测试连接
-            with engine.connect() as connection:
-                result = connection.execute("SELECT 1")
-                result.fetchone()
-            
-            logger.info(f"✅ 数据库连接成功 (psycopg2备选): {settings.database_url}")
-            return engine
-            
-        except Exception as e2:
-            logger.error(f"❌ psycopg2备选连接也失败: {e2}")
-            
-            # 最后备选方案：SQLite
-            sqlite_path = "sqlite:///./crawler.db"
-            engine = create_engine(
-                sqlite_path,
-                connect_args={"check_same_thread": False},
-                echo=False
-            )
-            logger.info(f"使用SQLite备选数据库: {sqlite_path}")
-            return engine
+            return original_get_server_version_info(self, connection)
+        except AssertionError:
+            # openGauss版本检查失败时，返回PostgreSQL 14.0
+            logger.warning("检测到openGauss，使用PostgreSQL 14.0兼容模式")
+            return (14, 0)
+    
+    PGDialect_psycopg2._get_server_version_info = patched_get_server_version_info
+
+# 应用补丁
+patch_opengauss()
 
 # 创建数据库引擎
-engine = create_database_engine()
+engine = create_engine(
+    settings.database_url,
+    poolclass=QueuePool,  # 连接池类型
+    pool_size=20,  # 连接池大小
+    max_overflow=0,  # 最大溢出连接数
+    pool_recycle=3600,  # 连接回收时间
+    pool_pre_ping=True,  # 连接前ping测试
+)
+        
+
+# 创建数据库引擎
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
