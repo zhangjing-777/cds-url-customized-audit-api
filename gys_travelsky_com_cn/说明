@@ -1,0 +1,7 @@
+执行命令
+cd /root/桌面/spider/gys_travelsky_com_cn
+python3_8 gys_travelsky_com_cn.py
+
+
+配置文件说明
+file_path 为data目录的路径

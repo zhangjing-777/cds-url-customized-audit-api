@@ -1,0 +1,11 @@
+执行命令
+cd /root/桌面/spider/travelskyir_com
+python3_8 travelskyir_com.py
+
+
+配置文件说明
+file_path 为data目录的路径
+# proxies 代理
+# {"https": "http://127.0.0.1:10809", "http": "http://127.0.0.1:10809"} 设置代理，改ip和端口
+# {} 不设置代理
+

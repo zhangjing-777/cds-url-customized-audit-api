@@ -1,0 +1,7 @@
+执行命令
+cd /root/桌面/spider/travelsky_cn
+python3_8 travelsky_cn.py
+
+
+配置文件说明
+file_path 为data目录的路径
