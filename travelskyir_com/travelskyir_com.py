@@ -35,7 +35,7 @@ proxies = json.loads(config.get('info', 'proxies'))
 
 file_date = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H_%M_%S')
 date_path = os.path.join(file_path, file_date)
-os.mkdir(date_path)
+os.mkdir(date_path, exist_ok=True)
 
 meta_json = {"urls": []}
 img_url_set = set()
@@ -84,7 +84,7 @@ class TravelskyirCom(feapder.AirSpider):
         page_path = os.path.join(date_path, path_name)
         img_file_path = os.path.join(page_path, 'image')
         try:
-            os.mkdir(img_file_path)
+            os.mkdir(img_file_path, exist_ok=True)
         except:
             return
 
@@ -116,11 +116,11 @@ class TravelskyirCom(feapder.AirSpider):
     def create_file(self, path_name, file_data, url):
         page_path = os.path.join(date_path, path_name)
         try:
-            os.mkdir(page_path)
+            os.mkdir(page_path, exist_ok=True)
         except:
             return
         txt_file_path = os.path.join(page_path, 'txt')
-        os.mkdir(txt_file_path)
+        os.mkdir(txt_file_path, exist_ok=True)
         file_name = os.path.join(txt_file_path, path_name) + '.txt'
 
         with open(file_name, 'w', encoding='utf8') as f:
