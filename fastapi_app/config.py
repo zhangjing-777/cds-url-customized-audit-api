@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://username:password@localhost:5432/crawler_db"
     audit_service_url: str = "http://localhost:8004"
     
+    # 数据库连接池配置
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
+    database_pool_timeout: int = 30
+    database_pool_recycle: int = 3600
+    
     # 这些是固定的配置，使用 ClassVar
     crawler_configs: ClassVar[Dict[str, str]] = {
         "gys": "./gys_travelsky_com_cn/config.ini",
